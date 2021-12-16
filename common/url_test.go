@@ -49,7 +49,11 @@ func TestNewURLWithOptions(t *testing.T) {
 		WithPort("8080"),
 		WithMethods(methods),
 		WithParams(params),
-		WithParamsValue("key2", "value2"))
+		WithParamsValue("key2", "value2"),
+		WithLocation("testLocation"),
+		WithToken("testToken"),
+	)
+
 	assert.Equal(t, "/com.test.Service", u.Path)
 	assert.Equal(t, userName, u.Username)
 	assert.Equal(t, password, u.Password)
@@ -58,6 +62,9 @@ func TestNewURLWithOptions(t *testing.T) {
 	assert.Equal(t, "8080", u.Port)
 	assert.Equal(t, methods, u.Methods)
 	assert.Equal(t, params, u.params)
+	assert.Equal(t, "127.0.0.1:8080", u.Location)
+	expectedToken := u.GetParam(constant.TokenKey, "")
+	assert.Equal(t, "testToken", expectedToken)
 }
 
 func TestURL(t *testing.T) {
@@ -186,6 +193,21 @@ func TestURLGetParamInt(t *testing.T) {
 	u = URL{}
 	v = u.GetParamInt("key", 1)
 	assert.Equal(t, int64(1), v)
+}
+
+func TestUrlGetParamInt32(t *testing.T) {
+	params := url.Values{}
+	params.Set("key", "value")
+
+	u := URL{}
+	u.SetParams(params)
+
+	v := u.GetParamInt32("key", int32(1))
+	assert.Equal(t, int32(1), v)
+
+	u = URL{}
+	v = u.GetParamInt32("key", int32(1))
+	assert.Equal(t, int32(1), v)
 }
 
 func TestURLGetParamIntValue(t *testing.T) {
@@ -420,4 +442,33 @@ func TestCompareURLEqualFunc(t *testing.T) {
 
 func CustomCompareURLEqual(l *URL, r *URL, execludeParam ...string) bool {
 	return l.PrimitiveURL == r.PrimitiveURL
+}
+
+func TestURLMatchKey(t *testing.T) {
+	expected := "serviceKeyTest:protocolTest"
+	serviceKey := "serviceKeyTest"
+	protocol := "protocolTest"
+	res := MatchKey(serviceKey, protocol)
+	assert.Equal(t, expected, res)
+}
+
+var (
+	intf    = "a"
+	group   = "b"
+	version = "c"
+)
+
+func TestURLServiceKey(t *testing.T) {
+	t.Run("Complete", func(t *testing.T) {
+		expected := "b/a:c"
+		res := ServiceKey(intf, group, version)
+		assert.Equal(t, expected, res)
+	})
+
+	t.Run("MissingIntf", func(t *testing.T) {
+		expected := ""
+		intf = ""
+		ans := ServiceKey(intf, group, version)
+		assert.Equal(t, expected, ans)
+	})
 }
