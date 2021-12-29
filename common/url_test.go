@@ -210,6 +210,18 @@ func TestUrlGetParamInt32(t *testing.T) {
 	assert.Equal(t, int32(1), v)
 }
 
+func TestUrlGetParamByIntValue(t *testing.T){
+	params := url.Values{}
+	params.Set("key", "value")
+
+	u := URL{}
+	u.SetParams(params)
+
+	v := u.GetParamByIntValue("key", 1)
+	assert.Equal(t, int(1), v)
+
+}
+
 func TestURLGetParamIntValue(t *testing.T) {
 	params := url.Values{}
 	params.Set("key", "0")
@@ -295,6 +307,39 @@ func TestURLGetMethodParamInt(t *testing.T) {
 	v = u.GetMethodParamInt("GetValue", "timeout", 1)
 	assert.Equal(t, int64(1), v)
 }
+
+func TestUrlGetMethodParamIntValue(t *testing.T)  {
+	params := url.Values{}
+	params.Set("methods.GetValue.timeout", "3")
+
+	u := URL{}
+	u.SetParams(params)
+
+	v := u.GetMethodParamIntValue("GetValue", "timeout", 1)
+	assert.Equal(t, 3, v)
+
+	u = URL{}
+	v = u.GetMethodParamIntValue("GetValue", "timeout", 1)
+	assert.Equal(t, 1, v)
+
+}
+
+func TestUrlGetMethodParamInt64(t *testing.T)  {
+	params := url.Values{}
+	params.Set("methods.GetValue.timeout", "3")
+
+	u := URL{}
+	u.SetParams(params)
+
+	v := u.GetMethodParamInt64("GetValue", "timeout", 1)
+	assert.Equal(t, int64(3), v)
+
+	u = URL{}
+	v = u.GetMethodParamInt64("GetValue", "timeout", 1)
+	assert.Equal(t, int64(1), v)
+
+}
+
 
 func TestURLGetMethodParam(t *testing.T) {
 	params := url.Values{}
@@ -444,6 +489,62 @@ func CustomCompareURLEqual(l *URL, r *URL, execludeParam ...string) bool {
 	return l.PrimitiveURL == r.PrimitiveURL
 }
 
+func Test1(t *testing.T)  {
+	assert.True(t,false)
+
+}
+
+func TestURLGetCacheInvokerMapKey(t *testing.T) {
+
+	expected :=  "dubbo://UsernameTest:PasswordTest@127.0.0.1:20000/?interface=com.ikurento.user.UserProvider&group=groupTest&version=versionTest&timestamp=155650979798"
+
+	PrimitiveURL := "dubbo://127.0.0.1:20000/com.ikurento.user.UserProvider?anyhost=true&" +
+		"application=BDTService&category=providers&default.timeout=10000&dubbo=dubbo-provider-golang-1.0.0&" +
+		"environment=dev&interface=com.ikurento.user.UserProvider&ip=192.168.56.1&methods=GetUser%2C&" +
+		"module=dubbogo+user-info+server&org=ikurento.com&owner=ZX&pid=1447&revision=0.0.1&" +
+		"side=provider&timeout=3000&timestamp=155650979798"
+
+	urlTest := &URL{baseURL: baseURL{PrimitiveURL: PrimitiveURL,
+		Protocol: "dubbo",
+		Ip:       "127.0.0.1",
+		Port:     "20000"},
+		Username: "UsernameTest",
+		Password: "PasswordTest",
+	}
+
+	urlTest.AddParam(constant.InterfaceKey, "com.ikurento.user.UserProvider")
+	urlTest.AddParam(constant.VersionKey, "versionTest")
+	urlTest.AddParam(constant.GroupKey, "groupTest")
+	urlTest.AddParam(constant.TimestampKey, "TimestampKeyTest")
+
+	res := urlTest.GetCacheInvokerMapKey()
+	assert.Equal(t, expected, res)
+
+}
+
+func TestURLServiceKey(t *testing.T) {
+
+	expected := "groupTest/com.ikurento.user.UserProvider:versionTest"
+	urlTest, _ := NewURL("dubbo://127.0.0.1:20000")
+	urlTest.AddParam(constant.InterfaceKey, "com.ikurento.user.UserProvider")
+	urlTest.AddParam(constant.VersionKey, "versionTest")
+	urlTest.AddParam(constant.GroupKey, "groupTest")
+	res := urlTest.ServiceKey()
+	assert.Equal(t, expected, res)
+}
+
+func TestEncodedServiceKey(t *testing.T) {
+
+	expected := "groupTest*com.ikurento.user.UserProvider:versionTest"
+	urlTest, _ := NewURL("dubbo://127.0.0.1:20000")
+	urlTest.AddParam(constant.InterfaceKey, "com.ikurento.user.UserProvider")
+	urlTest.AddParam(constant.VersionKey, "versionTest")
+	urlTest.AddParam(constant.GroupKey, "groupTest")
+	res:=urlTest.EncodedServiceKey()
+	assert.Equal(t, expected, res)
+
+}
+
 func TestURLMatchKey(t *testing.T) {
 	expected := "serviceKeyTest:protocolTest"
 	serviceKey := "serviceKeyTest"
@@ -452,23 +553,27 @@ func TestURLMatchKey(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
-var (
-	intf    = "a"
-	group   = "b"
-	version = "c"
-)
+func TestServiceKey(t *testing.T) {
+	var (
+		intf    = "a"
+		group   = "b"
+		version = "c"
+	)
 
-func TestURLServiceKey(t *testing.T) {
 	t.Run("Complete", func(t *testing.T) {
 		expected := "b/a:c"
 		res := ServiceKey(intf, group, version)
 		assert.Equal(t, expected, res)
 	})
 
-	t.Run("MissingIntf", func(t *testing.T) {
+	t.Run("IntfBlank", func(t *testing.T) {
 		expected := ""
 		intf = ""
 		ans := ServiceKey(intf, group, version)
 		assert.Equal(t, expected, ans)
 	})
 }
+
+//func TestURLCloneExceptParams(t *testing.T){
+//
+//}
